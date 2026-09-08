@@ -1,0 +1,128 @@
+using Harbor.Api.Contracts;
+using Harbor.Api.Infrastructure;
+using Harbor.Domain.Entities;
+using Harbor.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace Harbor.Api.Controllers;
+
+[ApiController]
+public class TeammatesController(HarborDbContext db, TimeProvider clock) : ControllerBase
+{
+    /// <summary>Creates a teammate and mints their API key (admin only).</summary>
+    [HttpPost("api/workspaces/{workspaceId:guid}/teammates")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<TeammateCreatedResponse>> Create(Guid workspaceId, CreateTeammateRequest request)
+    {
+        if (!await db.Workspaces.AnyAsync(w => w.Id == workspaceId))
+        {
+            return NotFound();
+        }
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (await db.Teammates.AnyAsync(t => t.WorkspaceId == workspaceId && t.Email == email))
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Duplicate teammate email",
+                Detail = $"A teammate with email '{email}' already exists in this workspace.",
+                Status = StatusCodes.Status409Conflict,
+            });
+        }
+
+        var apiKey = ApiKeys.Generate();
+        var teammate = new Teammate
+        {
+            WorkspaceId = workspaceId,
+            Name = request.Name,
+            Email = email,
+            Role = request.Role,
+            ApiKeyHash = ApiKeys.Hash(apiKey),
+        };
+        db.Teammates.Add(teammate);
+        ApiKeys.StageInitial(db, teammate);
+        await db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetById), new { id = teammate.Id }, teammate.ToCreatedResponse(apiKey));
+    }
+
+    [HttpGet("api/workspaces/{workspaceId:guid}/teammates")]
+    public async Task<ActionResult<List<TeammateResponse>>> List(
+        Guid workspaceId, [FromQuery] TeammateFilterRequest filter, CancellationToken cancellationToken)
+    {
+        if (!await db.Workspaces.AnyAsync(w => w.Id == workspaceId))
+        {
+            return NotFound();
+        }
+
+        var query = db.Teammates.AsNoTracking().Where(t => t.WorkspaceId == workspaceId);
+        if (!string.IsNullOrWhiteSpace(filter.Q))
+        {
+            var needle = filter.Q.Trim().ToLowerInvariant();
+            query = query.Where(t => t.Name.ToLower().Contains(needle)
+                || t.Email.ToLower().Contains(needle));
+        }
+        if (filter.Availability is { } availability)
+        {
+            query = query.Where(t => t.Availability == availability);
+        }
+        if (filter.Role is { } role)
+        {
+            query = query.Where(t => t.Role == role);
+        }
+
+        return await query
+            .OrderBy(t => t.Name).ThenBy(t => t.Id)
+            .Select(t => t.ToResponse())
+            .ToPageAsync(filter, Response, cancellationToken);
+    }
+
+    [HttpGet("api/teammates/{id:guid}")]
+    public async Task<ActionResult<TeammateResponse>> GetById(Guid id)
+    {
+        var teammate = await db.Teammates
+            .SingleOrDefaultAsync(t => t.Id == id && t.WorkspaceId == User.GetWorkspaceId());
+        return teammate is null ? NotFound() : teammate.ToResponse();
+    }
+
+    /// <summary>
+    /// Sets availability and capacity. Teammates manage their own status;
+    /// admins can manage anyone's.
+    /// </summary>
+    [HttpPut("api/teammates/{id:guid}/availability")]
+    public Task<ActionResult<TeammateResponse>> UpdateAvailability(Guid id, UpdateAvailabilityRequest request) =>
+        WriteTransactions.RunAsync(db, () => UpdateAvailabilityCore(id, request), HttpContext.RequestAborted);
+
+    private async Task<ActionResult<TeammateResponse>> UpdateAvailabilityCore(Guid id, UpdateAvailabilityRequest request)
+    {
+        var teammate = await db.Teammates
+            .SingleOrDefaultAsync(t => t.Id == id && t.WorkspaceId == User.GetWorkspaceId());
+        if (teammate is null)
+        {
+            return NotFound();
+        }
+
+        if (id != User.GetTeammateId() && !User.IsAdmin())
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Cannot change another teammate's availability",
+                Detail = "Only admins can change availability for other teammates.",
+                Status = StatusCodes.Status403Forbidden,
+            })
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+            };
+        }
+
+        ConfigurationAudits.Availability(db, teammate.WorkspaceId, User.GetTeammateId(), id, teammate.Availability, teammate.CapacityLimit,
+            request.Availability, request.CapacityLimit, clock.GetUtcNow());
+        teammate.Availability = request.Availability;
+        teammate.CapacityLimit = request.CapacityLimit;
+        await db.SaveChangesAsync();
+
+        return teammate.ToResponse();
+    }
+}

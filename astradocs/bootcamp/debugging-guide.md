@@ -122,8 +122,8 @@ dotnet test tests/Harbor.Tests/Harbor.Tests.csproj --filter 'FullyQualifiedName~
 dotnet test tests/Harbor.Tests/Harbor.Tests.csproj --filter 'FullyQualifiedName~TriageLearningTests|FullyQualifiedName~AssignmentRulesTests'
 ```
 
-If this machine has not put dotnet on PATH, the installed SDK used for this work
-is `C:/Users/E/.dotnet/dotnet.exe`; invoke it with PowerShell's `&` operator. The
+If dotnet is not on PATH but a user-local SDK exists, invoke it directly with
+PowerShell's `&` operator, for example `& "$env:USERPROFILE\.dotnet\dotnet.exe" test ...`. The
 [run-and-observe guide](../10-run-and-observe.md) provides broader setup context.
 
 A filter can accidentally select zero tests. Always read the selected total.

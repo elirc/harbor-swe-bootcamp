@@ -70,13 +70,19 @@ each new word with a method you have actually inspected.
 ## Present capabilities versus future exercises
 
 The code supports filtering, sorting, queue overview, manual SLA evaluation,
-and manually triggered webhook dispatch. It does not include a front-end chat
-UI, an automatic snooze sweep, or a hosted outbox scheduling loop.
+manually triggered webhook dispatch (bounded leased claims), an admin-triggered
+`wake-due` snooze sweep in `TriageController`, and paged thread reads at
+`GET /api/conversations/{id}/messages`. Two hosted workers run in the background:
+`PublicationScheduleWorker` and `ConversationExportWorker` (registered in
+`Program.cs`). It does not include a front-end chat UI, a periodic snooze sweep,
+or a hosted webhook-dispatch loop.
 
-Conversation detail still includes the whole thread. Database version tokens
-do not automatically protect a human editing from an old browser view across
-separate requests. These are opportunities in the
-[future capstones](../docs/learning/capstones.md), not implemented guarantees.
+Conversation detail (`GetById`) still includes the whole thread. Stale-edit
+protection across separate requests exists only where a request carries an
+`ExpectedVersion` (for example `PUT /api/conversations/{id}/subject`, which returns
+409 when stale); other updates do not check what the client last saw. The
+[capstones](../docs/learning/capstones.md) page marks which exercises now have a
+reference implementation.
 
 When lost, return to [the start page](README.md), pick one operation, and follow
 one call. You can understand a useful part before understanding all of it.

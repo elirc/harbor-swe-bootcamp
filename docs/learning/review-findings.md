@@ -26,6 +26,14 @@ extreme pages. The SQL-translation test continues to guard segment composition.
 
 ## Deliberate remaining practice opportunities
 
+> **Status note (checked 2026-10-06):** this section predates the 75-story
+> bootcamp. Since then, paged messages (`GET /api/conversations/{id}/messages`),
+> an admin-triggered `POST .../conversations/wake-due` sweep, `ExpectedVersion`
+> stale-edit checks on subject/draft/checklist edits, and bounded leased webhook
+> claims have been added. What remains true: `GetById` still returns the whole
+> thread, and nothing runs the snooze sweep or webhook dispatch on a schedule.
+> See the status table in [capstones](capstones.md).
+
 **Large detail responses:** `GetById` still loads the full conversation thread.
 The new overview avoids that work, but does not change the detail contract.
 [Paged messages](capstones.md) is a bounded next feature with a compatibility lesson.

@@ -63,14 +63,18 @@ record” can race when those steps are not atomic.
 ## Scheduling and bounded work are separate concerns
 
 The repository exposes manual endpoints to evaluate SLAs and dispatch webhooks.
-There is no hosted scheduler that automatically drains the outbox. A snoozed
-conversation also has no periodic wake-up sweep yet. Storing a due time does not
-make an operation run when that time arrives.
+There is no hosted scheduler that automatically drains the outbox. Snoozed
+conversations are woken only when an admin calls
+`POST /api/workspaces/{id}/conversations/wake-due`; there is no periodic sweep.
+Storing a due time does not make an operation run when that time arrives. (The
+two hosted services in `Program.cs`, `PublicationScheduleWorker` and
+`ConversationExportWorker`, handle article publication and exports, not webhooks.)
 
-The existing dispatcher materializes all due deliveries for a workspace and
-processes them serially. Retry attempts are limited, so do not promise eventual
-delivery in all cases. A future worker needs bounded batches, cancellation,
-recovery, observability, and an explicit policy for exhausted deliveries.
+`WebhookDispatcher.DispatchAsync` claims one ready delivery at a time under a
+lease, at most 50 per call, and processes them serially. Retry attempts are
+limited, so do not promise eventual delivery in all cases. A future scheduled
+worker still needs a loop, shutdown deadline, observability, and an explicit
+policy for exhausted deliveries.
 
 Exercise: estimate the time for 500 serial deliveries if every attempt hits a
 10-second timeout. Propose a batch limit and a recovery signal before proposing

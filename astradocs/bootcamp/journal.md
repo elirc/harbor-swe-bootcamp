@@ -6,11 +6,11 @@
 
 **Scope interpretation:** all 25 junior, 30 midlevel, and 20 mid/senior stories. Earlier instructions to leave stories unimplemented were superseded by the explicit request to build all of them. Their original planning documents remain useful specifications.
 
-**Initial observations:** the working tree already contains documentation, shared conversation-query work, tests, and project changes from earlier work. They are preserved. The repository uses .NET 10, ASP.NET Core, EF Core SQLite, and xUnit. The available SDK is `C:/Users/E/.dotnet/dotnet.exe`, version 10.0.400.
+**Initial observations:** the working tree already contains documentation, shared conversation-query work, tests, and project changes from earlier work. They are preserved. The repository uses .NET 10, ASP.NET Core, EF Core SQLite, and xUnit. The available SDK was a user-local install (`~/.dotnet/dotnet.exe`), version 10.0.400.
 
 **First implementation group:** US01–US05, contact search, presence filters, conversation existence, and name normalization. These features introduce a small shared query that later contact summaries, imports, segments, and merge workflows can build on.
 
-**Baseline verification:** `C:/Users/E/.dotnet/dotnet.exe test --configuration Release --no-restore` passed all 683 existing tests, with no failures or skips. Test execution reported 3 minutes 54 seconds after the initial build. The new contact tests were not part of that compiled baseline. A focused Debug run is checking their pre-implementation failures separately.
+**Baseline verification:** `dotnet test --configuration Release --no-restore` passed all 683 existing tests, with no failures or skips. Test execution reported 3 minutes 54 seconds after the initial build. The new contact tests were not part of that compiled baseline. A focused Debug run is checking their pre-implementation failures separately.
 
 **Learning observation:** the first file read encountered a Windows console encoding failure on a BOM in a project file. That is a tooling/output issue, not a C# build failure. Future Python file reads should use UTF-8 output explicitly or handle console encoding before printing.
 
@@ -141,7 +141,7 @@ Learning content now includes 22 lessons (over 25,000 words), a codebase atlas, 
 
 ## Final current-source verification
 
-The complete Release suite finished successfully: **857 passed, zero failed, zero skipped**, with reported test duration 3 minutes 25 seconds. Command: `dotnet test tests/Harbor.Tests/Harbor.Tests.csproj --configuration Release -m:1 -p:UseSharedCompilation=false --logger "trx;LogFileName=all-stories-v2.trx" --results-directory .artifacts/bootcamp`. This environment used `C:/Users/E/.dotnet/dotnet.exe` because the SDK was not on PATH. Log: `.artifacts/bootcamp/all-stories-v2.log`; structured result: `.artifacts/bootcamp/all-stories-v2.trx`. The build emitted no warnings or errors.
+The complete Release suite finished successfully: **857 passed, zero failed, zero skipped**, with reported test duration 3 minutes 25 seconds. Command: `dotnet test tests/Harbor.Tests/Harbor.Tests.csproj --configuration Release -m:1 -p:UseSharedCompilation=false --logger "trx;LogFileName=all-stories-v2.trx" --results-directory .artifacts/bootcamp`. This environment invoked a user-local SDK (`~/.dotnet/dotnet.exe`) because the SDK was not on PATH. Log: `.artifacts/bootcamp/all-stories-v2.log`; structured result: `.artifacts/bootcamp/all-stories-v2.trx`. The build emitted no warnings or errors.
 
 This run includes the corrected per-conversation watcher-limit fixture, distinct legacy article tokens, fixed-clock publication version advancement and scheduled-publication rollback, idempotent export completion, and all earlier story groups. The tracker now records all 75 stories as Verified. That means implemented behavior, executed tests, API documentation, and linked lessons; it does not mean a learner has mastered every lesson or that every possible deployment failure has been simulated.
 

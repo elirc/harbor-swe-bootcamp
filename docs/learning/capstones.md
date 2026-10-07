@@ -1,6 +1,21 @@
 # Capstones: practice independent ownership
 
-These are proposed exercises, **not implemented features**. Choose one at a time.
+These were written as proposed exercises before the 75-story bootcamp.
+
+> **Status note (checked 2026-10-06):** several capstones now have a reference
+> implementation in this checkout. Treat them as "design it yourself first, then
+> compare" exercises, and do the comparison on a practice branch.
+>
+> | Capstone | Reference implementation now in the code | Evidence |
+> | --- | --- | --- |
+> | 1. Waiting filter | `AwaitingFirstResponse` in `src/Harbor.Api/Contracts/Requests.cs` (story US17) | `QueueLearningTests.cs` |
+> | 2. Message paging | `ConversationsController.ListMessages` — `GET /api/conversations/{id}/messages` (US22/US23) | `QueueLearningTests.cs` |
+> | 3. Wake due snoozes | `TriageController.WakeDue` (admin-only, manual, `limit` 1–200) calling `SnoozeWake` (M08) | `TriageLearningTests.cs` |
+> | 4. Stale browser edit | `ConversationEditingController` — `PUT .../subject` requires `ExpectedVersion`, returns 409 when stale (M04) | `SubjectEditingLearningTests.cs` |
+> | 5. Email retries | `InboundEmailReceipts` lookup in `EmailController` (S02) | `S02InboundReceiptTests.cs` |
+> | 6. Outbox worker | Partly: `WebhookDispatcher.DispatchAsync` now claims at most 50 leased deliveries one at a time (S03), but there is still **no hosted loop** — dispatch is a manual admin POST | `WebhookLeasePersistenceTests.cs` |
+>
+> Capstones 7 and 8 remain open. Choose one at a time.
 Write a [feature brief](templates/feature-brief.md) before coding. Every capstone
 needs acceptance criteria, tests, docs, a failure case, and a review of scope.
 Time estimates are practice-session budgets, not delivery promises.

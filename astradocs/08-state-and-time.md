@@ -58,8 +58,11 @@ changing priority does not start an entirely fresh creation clock.
 ## One feature the timestamp alone does not provide
 
 The current host does not run a periodic sweep to reopen due snoozed conversations.
-Recording `SnoozedUntil` is not the same as scheduling a worker. A contact reply
-or explicit state action can reopen it; automatic sweeping is a future exercise.
+Recording `SnoozedUntil` is not the same as scheduling a worker. A contact reply,
+an explicit state action, or an admin calling
+`POST /api/workspaces/{workspaceId}/conversations/wake-due` (see `WakeDue` in
+[TriageController](../src/Harbor.Api/Controllers/TriageController.cs)) can reopen
+it. Something still has to call that endpoint; running it on a timer is a future exercise.
 
 ## Check the story
 
